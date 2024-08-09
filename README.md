@@ -1,7 +1,5 @@
 # FAT-32 Emulator
 
-## Overview
-
 This project is a FAT-32 emulator program that allows users to manage a FAT-32 file system backed up by a file. The emulator offers a Command Line Interface (CLI) with basic commands to navigate and manipulate the file system, similar to working with a real disk.
 
 ## Features
