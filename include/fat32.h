@@ -60,10 +60,10 @@ enum {
   crt_time_size = 2,
   crt_date_size = 2,
   lst_acc_date_size = 2,
-  fst_clus_hi_size = 2,
+  fst_clust_hi_size = 2,
   wrt_time_size = 2,
   wrt_date_size = 2,
-  fst_clus_lo_size = 2,
+  fst_clust_lo_size = 2,
   file_size_size = 4
 };
 
@@ -76,10 +76,10 @@ typedef struct {
   unsigned char crt_time[crt_time_size];
   unsigned char crt_date[crt_date_size];
   unsigned char lst_acc_date[lst_acc_date_size];
-  unsigned char fst_clus_hi[fst_clus_hi_size];
+  unsigned char fst_clust_hi[fst_clust_hi_size];
   unsigned char wrt_time[wrt_time_size];
   unsigned char wrt_date[wrt_date_size];
-  unsigned char fst_clus_lo[fst_clus_lo_size];
+  unsigned char fst_clust_lo[fst_clust_lo_size];
   unsigned char file_size[file_size_size];
 } dir_entry;
 
@@ -183,13 +183,8 @@ void info_cmd(const image *image);
 bool format_cmd(char args[], image *image, char error_msg[]);
 bool ls_cmd(char args[], const image *image, char error_msg[]);
 bool cd_cmd(char args[], image *image, char error_msg[]);
-size_t size_cmd(char args[], const image *image, char error_msg[]);
 bool touch_cmd(char args[], image *image, char error_msg[]);
 bool mkdir_cmd(char args[], image *image, char error_msg[]);
-bool open_cmd(char args[], image *image, char error_msg[]);
-bool close_cmd(char args[], image *image, char error_msg[]);
-bool read_cmd(char args[], image *image, char error_msg[]);
-bool write_cmd(char args[], image *image, char error_msg[]);
 bool rm_cmd(char args[], image *image, char error_msg[]);
 bool rmdir_cmd(char args[], image *image, char error_msg[]);
 
@@ -202,4 +197,4 @@ int hex_str_to_dec(const unsigned char *buffer, int buffer_size);
 int power(int base, int raise);
 int compare_dirs(const void *p1, const void *p2);
 
-#endif
+#endif // FAT32_H

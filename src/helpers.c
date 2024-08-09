@@ -162,9 +162,9 @@ int get_total_clusters(const image *image) {
 int get_cluster_size(const image *image) {
   unsigned long bytes_per_sector =
       hex_str_to_dec(image->boot_sector.byts_per_sec, byts_per_sec_size);
-  unsigned long sectorsPerCluster =
+  unsigned long sectors_per_cluster =
       hex_str_to_dec(image->boot_sector.sec_per_clus, sec_per_clus_size);
-  return bytes_per_sector * sectorsPerCluster;
+  return bytes_per_sector * sectors_per_cluster;
 }
 
 // get the size of the reserved region by multiplying
@@ -181,25 +181,6 @@ int get_reserved_size(const image *image) {
            reserved_sectors);
   return bytes_per_sector * reserved_sectors;
 }
-
-// get the size of the FAT region by multiplying the sectors
-// per FAT Region (FATSz) by the bytes per sector (byts_per_sec)
-// by the number of FAT sections (num_fats)
-/*int get_FAT_size(const image *image) {
-  if (dev)
-    printf("[-] get_FAT_size(image pointer: 0x%llx)\n", image);
-  unsigned long FAT_size =
-      hex_str_to_dec(image->boot_sector.fat_sz_32, fat_sz_32_size);
-  unsigned long num_of_FATs =
-      hex_str_to_dec(image->boot_sector.num_fats, num_fats_size);
-  unsigned long bytes_per_sector =
-      hex_str_to_dec(image->boot_sector.byts_per_sec, byts_per_sec_size);
-  if (dev)
-    printf(
-        "[-] FAT_size: size: %lu | num of fats: %lu | bytes per sector: %lu\n",
-        FAT_size, num_of_FATs, bytes_per_sector);
-  return (FAT_size * num_of_FATs * bytes_per_sector);
-}*/
 
 size_t get_FAT_size(const image *img) {
   if (img == NULL) {
@@ -264,26 +245,25 @@ int get_data_size(const image *image) {
 }
 
 // function for getting the bytes from a cluster
-void get_cluster(const image *image, int clusterNumber,
-                 unsigned char *cluster) {
+void get_cluster(const image *image, int cluster_num, unsigned char *cluster) {
   // print tracing message
   if (dev)
     printf("[-] get_cluster(image pointer: 0x%llx, cluster number: %d, cluster "
            "array: %d)\n",
-           image, clusterNumber, *cluster);
+           image, cluster_num, *cluster);
   // error check cluster number
-  clusterNumber = (clusterNumber < 2) ? 2 : clusterNumber;
-  clusterNumber = (clusterNumber > get_total_clusters(image) + 2)
-                      ? get_total_clusters(image)
-                      : clusterNumber;
+  cluster_num = (cluster_num < 2) ? 2 : cluster_num;
+  cluster_num = (cluster_num > get_total_clusters(image) + 2)
+                    ? get_total_clusters(image)
+                    : cluster_num;
   /* error check cluster number
   if (*cluster < 2 || *cluster > get_total_clusters(image) + 2) {
     printf("[!] Invalid cluster number: %d\n", *cluster);
     exit(1);
   }*/
   // read in cluster
-  int start_index = get_data_start_index(image) +
-                    (clusterNumber - 2) * get_cluster_size(image);
+  int start_index =
+      get_data_start_index(image) + (cluster_num - 2) * get_cluster_size(image);
   int i;
   for (i = 0; i < get_cluster_size(image); i++)
     cluster[i] = image->buffer[start_index + i];
@@ -377,8 +357,8 @@ void set_FAT_table_value(const image *image, int index, unsigned char *value) {
         "[-] set_FAT_table_value(image pointer: 0x%llx, index:%d, %x%x%x%x)\n",
         image, index, value[0], value[1], value[2], value[3]);
   // get position in buffer to change FAT table
-  int FATstart = get_FAT_start_index(image);
-  int buffer_pos = FATstart + index * 4;
+  int FAT_start = get_FAT_start_index(image);
+  int buffer_pos = FAT_start + index * 4;
   // loop through and change FAT table values
   int i;
   for (i = 0; i < 4; i++)
@@ -506,14 +486,14 @@ bool add_dir_entry_to_cluster(image *image, dir_entry d, int cluster) {
     image->buffer[buffer_pos++] = d.crt_date[i];
   for (i = 0; i < lst_acc_date_size; i++)
     image->buffer[buffer_pos++] = d.lst_acc_date[i];
-  for (i = 0; i < fst_clus_hi_size; i++)
-    image->buffer[buffer_pos++] = d.fst_clus_hi[i];
+  for (i = 0; i < fst_clust_hi_size; i++)
+    image->buffer[buffer_pos++] = d.fst_clust_hi[i];
   for (i = 0; i < wrt_time_size; i++)
     image->buffer[buffer_pos++] = d.wrt_time[i];
   for (i = 0; i < wrt_date_size; i++)
     image->buffer[buffer_pos++] = d.wrt_date[i];
-  for (i = 0; i < fst_clus_lo_size; i++)
-    image->buffer[buffer_pos++] = d.fst_clus_lo[i];
+  for (i = 0; i < fst_clust_lo_size; i++)
+    image->buffer[buffer_pos++] = d.fst_clust_lo[i];
   for (i = 0; i < file_size_size; i++)
     image->buffer[buffer_pos++] = d.file_size[i];
 
@@ -583,10 +563,10 @@ dir_entry create_dir_entry(const char *name, unsigned char attr,
   // set first cluster low and hi
   unsigned char bytes[4];
   int_to_u_char(firs_cluster, bytes);
-  d.fst_clus_lo[0] = bytes[0];
-  d.fst_clus_lo[1] = bytes[1];
-  d.fst_clus_hi[0] = bytes[2];
-  d.fst_clus_hi[1] = bytes[3];
+  d.fst_clust_lo[0] = bytes[0];
+  d.fst_clust_lo[1] = bytes[1];
+  d.fst_clust_hi[0] = bytes[2];
+  d.fst_clust_hi[1] = bytes[3];
 
   // set file size
   for (i = 0; i < file_size_size; i++)
@@ -636,14 +616,14 @@ dir_entry read_dir_entry(const unsigned char *cluster, int entry) {
   start_index += crt_date_size;
   memcpy(d.lst_acc_date, cluster + start_index, lst_acc_date_size);
   start_index += lst_acc_date_size;
-  memcpy(d.fst_clus_hi, cluster + start_index, fst_clus_hi_size);
-  start_index += fst_clus_hi_size;
+  memcpy(d.fst_clust_hi, cluster + start_index, fst_clust_hi_size);
+  start_index += fst_clust_hi_size;
   memcpy(d.wrt_time, cluster + start_index, wrt_time_size);
   start_index += wrt_time_size;
   memcpy(d.wrt_date, cluster + start_index, wrt_date_size);
   start_index += wrt_date_size;
-  memcpy(d.fst_clus_lo, cluster + start_index, fst_clus_lo_size);
-  start_index += fst_clus_lo_size;
+  memcpy(d.fst_clust_lo, cluster + start_index, fst_clust_lo_size);
+  start_index += fst_clust_lo_size;
   memcpy(d.file_size, cluster + start_index, file_size_size);
   start_index += file_size_size;
 
@@ -680,8 +660,6 @@ bool update_image_file(const image *image) {
 }
 
 // read in image file and store it into an image struct
-// why struct? so we can save the buffer for the bytes along with
-// the size of the buffer
 void read_in_image_file(const char *image_filename, image *image) {
 
   // initial variables
@@ -783,10 +761,10 @@ boot_sector read_boot_sector(const char *image_file_name) {
 
 // function for removing trailing whitespace
 void remove_trailing_space(char *str) {
-  // remove newline
-  char *newline = strchr(str, '\n');
-  if (newline != NULL)
-    *newline = '\0';
+  // remove new_line
+  char *new_line = strchr(str, '\n');
+  if (new_line != NULL)
+    *new_line = '\0';
   // trim trailing space
   char *end = str + strlen(str) - 1; // sent end to the end of the string
   while (end > str && isspace(*end))
@@ -823,26 +801,26 @@ void int_to_u_char(int n, unsigned char *bytes) {
 }
 
 // function for converting hex string (little endian) to ASCII
-void hex_to_ASCII(const unsigned char *buffer, int bufferSize, char *str) {
+void hex_to_ASCII(const unsigned char *buffer, int buff_size, char *str) {
   int i, j;
   char k;
-  for (i = 0; i < bufferSize; i++) {
+  for (i = 0; i < buff_size; i++) {
     j = (int)buffer[i];
     k = (char)j;
     str[i] = k;
   }
-  str[bufferSize] = '\0';
+  str[buff_size] = '\0';
 }
 
 // function for converting hex string (little endian) to integer
-int hex_str_to_dec(const unsigned char *buffer, int bufferSize) {
+int hex_str_to_dec(const unsigned char *buffer, int buff_size) {
 
   int i, decimal = 0;
-  int values[bufferSize];
+  int values[buff_size];
 
-  for (i = 0; i < bufferSize; i++)
+  for (i = 0; i < buff_size; i++)
     values[i] = (int)buffer[i];
-  for (i = 0; i < bufferSize; i++)
+  for (i = 0; i < buff_size; i++)
     decimal += values[i] * power(256, i);
 
   return decimal;

@@ -1,4 +1,5 @@
 #include "../include/fat32.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 int main(int argc, char **argv) {
@@ -38,16 +39,16 @@ int main(int argc, char **argv) {
   fprintf(stdout, "[-] reading image file...\n");
   read_in_image_file(image_filename, image);
   image->boot_sector = read_boot_sector(image_filename);
-  if (strcmp((const char *)image->boot_sector.jmp_boot, "\xEB\x58\x90")) {
-    printf(
-        "[!] Unknown disk format, use 'format <filename>' to get valid FAT32 "
-        "image\n");
+  if (image->size == 0 || *(uint32_t *)image->boot_sector.fat_sz_32 == 0) {
+    printf("[!] Unknown disk format, use 'format <filename>' to get valid FAT32"
+           "image.\n    Or restart application with valid/without image file "
+           "argument\n");
     print_prompt(image);
     fgets(line, 200, stdin);
     parse_input(line, image);
   }
   // read image file in image struct
-  fprintf(stdout, "[-] reading image file...\n");
+  // fprintf(stdout, "[-] reading image file...\n");
   read_in_image_file(image_filename, image);
   image->boot_sector = read_boot_sector(image_filename);
   // set root cluster as current cluster
@@ -90,16 +91,16 @@ void print_prompt(const image *image) {
 void parse_input(char *line, image *image) {
 
   // initial variables
-  int lineCount, i;
+  int line_cnt, i;
 
   // remove trailing whitespace & split line into array
   remove_trailing_space(line);
-  char lineArr[100][100];
-  split(line, " ", &lineCount, lineArr);
+  char line_arr[100][100];
+  split(line, " ", &line_cnt, line_arr);
 
   // grab command, first word in input
-  char command[strlen(lineArr[0]) + 1];
-  strcpy(command, lineArr[0]);
+  char command[strlen(line_arr[0]) + 1];
+  strcpy(command, line_arr[0]);
 
   // get arguments
   char args[10000];
@@ -135,18 +136,6 @@ void parse_input(char *line, image *image) {
 
   else if (strcmp(command, "mkdir") == 0)
     check = mkdir_cmd(args, image, error_msg);
-
-  else if (strcmp(command, "open") == 0)
-    check = open_cmd(args, image, error_msg);
-
-  else if (strcmp(command, "close") == 0)
-    check = close_cmd(args, image, error_msg);
-
-  else if (strcmp(command, "read") == 0)
-    check = read_cmd(args, image, error_msg);
-
-  else if (strcmp(command, "write") == 0)
-    check = write_cmd(args, image, error_msg);
 
   else if (strcmp(command, "rm") == 0)
     check = rm_cmd(args, image, error_msg);
