@@ -51,13 +51,13 @@ Ok
 /> ls
 . ..
 /> mkdir ttt
-O
+Ok
 /> ls
 . .. ttt
 /> cd /ttt
 /ttt> ls
 . ..
-/ttt> cd /
+/ttt> cd ..
 ```
 
 ## Tests:
