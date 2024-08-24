@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -I./include -g
+CFLAGS = -I./include -g -Wall -Wextra
 
 SOURCES = $(wildcard src/*.c)
 OBJECTS = $(patsubst src/%.c,build/%.o,$(SOURCES))
