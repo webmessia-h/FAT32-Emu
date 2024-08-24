@@ -74,8 +74,8 @@ bool init_boot_sector(image *image) {
 
 bool setup_FAT_region(image *image) {
   if (dev)
-    printf("[-] setup_FAT_region(image ptr: 0x%llx)\n",
-           (unsigned long long)image);
+    printf("[-] setup_FAT_region(image ptr: 0x%p)\n",
+           image);
 
   int FAT_start = get_FAT_start_index(image);
   size_t total_FAT_size = get_FAT_size(image);
@@ -154,7 +154,7 @@ bool setup_root_directory(image *image) {
 // get total clusters in image file
 int get_total_clusters(const image *image) {
   if (dev)
-    printf("[-] get_total_clusters(image pointer: 0x%llx)\n", image);
+    printf("[-] get_total_clusters(image pointer: 0x%p)\n", image);
   return get_FAT_size(image) / 4;
 }
 
@@ -171,7 +171,7 @@ int get_cluster_size(const image *image) {
 // the bytes per sector by the number of reserved sectors
 int get_reserved_size(const image *image) {
   if (dev)
-    printf("[-] get_reserved_size(image pointer: 0x%llx)\n", image);
+    printf("[-] get_reserved_size(image pointer: 0x%p)\n", image);
   unsigned long bytes_per_sector =
       hex_str_to_dec(image->boot_sector.byts_per_sec, byts_per_sec_size);
   unsigned long reserved_sectors =
@@ -185,8 +185,8 @@ int get_reserved_size(const image *image) {
 size_t get_FAT_size(const image *img) {
   if (img == NULL) {
     if (dev)
-      fprintf(stderr, "[-] get_FAT_size(image pointer: 0x%llx)\n",
-              (unsigned long long)img);
+      fprintf(stderr, "[-] get_FAT_size(image pointer: 0x%p)\n",
+              img);
     return 0;
   }
 
@@ -248,7 +248,7 @@ int get_data_size(const image *image) {
 void get_cluster(const image *image, int cluster_num, unsigned char *cluster) {
   // print tracing message
   if (dev)
-    printf("[-] get_cluster(image pointer: 0x%llx, cluster number: %d, cluster "
+    printf("[-] get_cluster(image pointer: 0x%p, cluster number: %d, cluster "
            "array: %d)\n",
            image, cluster_num, *cluster);
   // error check cluster number
@@ -273,7 +273,7 @@ void get_cluster(const image *image, int cluster_num, unsigned char *cluster) {
 int find_avail_cluster(const image *image) {
   // print tracing message
   if (dev)
-    printf("[-] find_avail_cluster(image pointer: 0x%llx)\n", image);
+    printf("[-] find_avail_cluster(image pointer: 0x%p)\n", image);
   // variables for reading in FAT Region
   int FAT_region[get_total_clusters(image)]; // 4 bytes = cluster in FAT region
   get_FAT_region(image, FAT_region);         // stores FAT region into int array
@@ -291,7 +291,7 @@ int find_avail_cluster(const image *image) {
 int add_additional_cluster(const image *image, int first_cluster) {
   // print tracing message
   if (dev)
-    printf("[-] add_additional_cluster(image pointer: 0x%llx, first_cluster: "
+    printf("[-] add_additional_cluster(image pointer: 0x%p, first_cluster: "
            "%d)\n",
            image, first_cluster);
 
@@ -354,7 +354,7 @@ void set_FAT_table_value(const image *image, int index, unsigned char *value) {
   // print tracing message
   if (dev)
     printf(
-        "[-] set_FAT_table_value(image pointer: 0x%llx, index:%d, %x%x%x%x)\n",
+        "[-] set_FAT_table_value(image pointer: 0x%p, index:%d, %x%x%x%x)\n",
         image, index, value[0], value[1], value[2], value[3]);
   // get position in buffer to change FAT table
   int FAT_start = get_FAT_start_index(image);
@@ -371,7 +371,7 @@ void get_associated_clusters(const image *image, int starting_cluster,
   // print tracing message
   if (dev)
     printf(
-        "[-] get_associated_clusters(image pointer: 0x%llx, starting cluster: "
+        "[-] get_associated_clusters(image pointer: 0x%p, starting cluster: "
         "%d, clusters array: %d)\n",
         image, starting_cluster, *clusters);
 
@@ -403,7 +403,7 @@ void get_associated_clusters(const image *image, int starting_cluster,
 void get_FAT_region(const image *image, int *FAT_region) {
   // print tracing message
   if (dev)
-    printf("[-] get_FAT_region(image pointer: 0x%llx, int array:%d )\n", image,
+    printf("[-] get_FAT_region(image pointer: 0x%p, int array:%d )\n", image,
            *FAT_region);
   // array for storing cluster value
   unsigned char temp[4];
@@ -421,7 +421,7 @@ void get_FAT_region(const image *image, int *FAT_region) {
 bool add_dir_entry_to_cluster(image *image, dir_entry d, int cluster) {
   // print tracing message
   if (dev)
-    printf("[-] add_dir_entry_to_cluster(image pointer: 0x%llx, dir entry %d, "
+    printf("[-] add_dir_entry_to_cluster(image pointer: 0x%p, dir entry %d, "
            "cluster: %d)\n",
            image, d, cluster);
 
@@ -641,7 +641,7 @@ bool write_boot_sector(image *image) {
 bool update_image_file(const image *image) {
   // print tracing message
   if (dev)
-    printf("[-] update_image_file(image pointer: 0x%llx)\n", image);
+    printf("[-] update_image_file(image pointer: 0x%p)\n", image);
   // initial variables
   FILE *image_file;
   int bytes;
@@ -649,7 +649,7 @@ bool update_image_file(const image *image) {
   image_file = fopen(image->filename, "wb");
   if (image_file == NULL)
     fprintf(stderr,
-            "[!] failed to open file for writing (pointer: 0x%llx | filename: "
+            "[!] failed to open file for writing (pointer: 0x%p | filename: "
             "%s)\n",
             image_file, image->filename);
 

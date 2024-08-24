@@ -1,4 +1,4 @@
-#include "../include/fat32.h"
+#include "fat32.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
     image->buffer = (unsigned char *)calloc(image->size, sizeof(unsigned char));
     if (image->buffer == NULL) {
       fprintf(stderr, "[!] failed to allocate image->buffer!\n");
-      exit(-1);
+      exit(-2);
     }
     strcpy(image->filename, image_filename);
     // create image

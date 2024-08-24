@@ -575,7 +575,6 @@ bool format_cmd(char args[], image *image, char *error_msg) {
     if (!init_boot_sector(image) || !write_boot_sector(image) ||
         !setup_FAT_region(image) || !setup_root_directory(image) ||
         !update_image_file(image)) {
-      sprintf(error_msg, "%s", stderr);
       return false;
     } else
       return true;
