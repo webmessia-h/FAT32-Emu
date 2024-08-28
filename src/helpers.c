@@ -74,8 +74,7 @@ bool init_boot_sector(image *image) {
 
 bool setup_FAT_region(image *image) {
   if (dev)
-    printf("[-] setup_FAT_region(image ptr: 0x%p)\n",
-           image);
+    printf("[-] setup_FAT_region(image ptr: 0x%p)\n", image);
 
   int FAT_start = get_FAT_start_index(image);
   size_t total_FAT_size = get_FAT_size(image);
@@ -177,16 +176,15 @@ int get_reserved_size(const image *image) {
   unsigned long reserved_sectors =
       hex_str_to_dec(image->boot_sector.rsvd_sec_cnt, rsvd_sec_cnt_size);
   if (dev)
-    printf("[-] bytes per sector: %d | reserved sector: %d\n", bytes_per_sector,
-           reserved_sectors);
+    printf("[-] bytes per sector: %lu | reserved sector: %lu\n",
+           bytes_per_sector, reserved_sectors);
   return bytes_per_sector * reserved_sectors;
 }
 
 size_t get_FAT_size(const image *img) {
   if (img == NULL) {
     if (dev)
-      fprintf(stderr, "[-] get_FAT_size(image pointer: 0x%p)\n",
-              img);
+      fprintf(stderr, "[-] get_FAT_size(image pointer: 0x%p)\n", img);
     return 0;
   }
 
@@ -353,9 +351,8 @@ int add_additional_cluster(const image *image, int first_cluster) {
 void set_FAT_table_value(const image *image, int index, unsigned char *value) {
   // print tracing message
   if (dev)
-    printf(
-        "[-] set_FAT_table_value(image pointer: 0x%p, index:%d, %x%x%x%x)\n",
-        image, index, value[0], value[1], value[2], value[3]);
+    printf("[-] set_FAT_table_value(image pointer: 0x%p, index:%d, %x%x%x%x)\n",
+           image, index, value[0], value[1], value[2], value[3]);
   // get position in buffer to change FAT table
   int FAT_start = get_FAT_start_index(image);
   int buffer_pos = FAT_start + index * 4;
@@ -370,10 +367,9 @@ void get_associated_clusters(const image *image, int starting_cluster,
                              int *clusters) {
   // print tracing message
   if (dev)
-    printf(
-        "[-] get_associated_clusters(image pointer: 0x%p, starting cluster: "
-        "%d, clusters array: %d)\n",
-        image, starting_cluster, *clusters);
+    printf("[-] get_associated_clusters(image pointer: 0x%p, starting cluster: "
+           "%d, clusters array: %d)\n",
+           image, starting_cluster, *clusters);
 
   // error check cluster number
   starting_cluster = (starting_cluster < 2) ? 2 : starting_cluster;

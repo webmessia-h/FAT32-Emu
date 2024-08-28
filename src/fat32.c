@@ -83,7 +83,7 @@ void info_cmd(const image *image) {
  * print the name field for the directories within the contents of DIRNAME
  * including the “.” and “..” directories. For simplicity, you may print each of
  * the directory entries on separate lines
- */
+*/
 bool ls_cmd(char args[], const image *image, char error_msg[]) {
 
   // initial variables

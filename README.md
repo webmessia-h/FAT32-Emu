@@ -11,7 +11,8 @@ This project is a FAT-32 emulator program that allows users to manage a FAT-32 f
 
 ### Command Line Interface (CLI)
 
-- **Interactive CLI:** The emulator provides an interactive CLI where you can enter commands like `cd`, `format`, `ls`, `mkdir`, and `touch`.
+- **Interactive CLI:** The emulator provides an interactive CLI where you can enter commands like:
+  `cd`, `format`, `ls`, `mkdir`, and `touch`.
 - **Prompt Display:** The prompt shows the current directory path, e.g., `/path>`.
 
 ### CLI Commands
@@ -31,33 +32,13 @@ This project is a FAT-32 emulator program that allows users to manage a FAT-32 f
 1. **Compile the Program:**
 
 ```sh
-make
+make -j($nproc)
 ```
 
 2. **Run with FAT-32 image-file argument or without**
 
 ```sh
 ./fat32_emulator <path/to/image/file>
-```
-
-## Example Usage
-
-```sh
-./fat32_emulator /home/user/test.disk
-/> ls
-Unknown disk format
-/> format
-Ok
-/> ls
-. ..
-/> mkdir ttt
-Ok
-/> ls
-. .. ttt
-/> cd /ttt
-/ttt> ls
-. ..
-/ttt> cd ..
 ```
 
 ## Tests:
