@@ -1,7 +1,11 @@
-#include "../include/fat32.h"
+#include "fat32.h"
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 // function for getting the index of the beginning of the FAT Region
 // simply return the size of the reserved region
 int get_FAT_start_index(const image *image) { return get_reserved_size(image); }
@@ -14,10 +18,21 @@ int get_data_start_index(const image *image) {
 
 // Initialize boot sector
 bool init_boot_sector(image *image) {
+  // Check if image and its components are valid
+  if (image == NULL) {
+    fprintf(stderr, "Error: image is NULL\n");
+    return false;
+  }
+
+  // Check if the image's buffer and boot sector are valid
+  if (image->buffer == NULL) {
+    fprintf(stderr, "Error: image buffer or boot sector is NULL\n");
+    return false;
+  }
+
   memcpy(image->boot_sector.jmp_boot, "\xEB\x58\x90", jmp_boot_size);
   memcpy(image->boot_sector.OEM_name, "FAT32emu", oem_name_size);
   uint16_t bytes_per_sector = 512;
-  uint8_t sectors_per_cluster = 8;
   uint16_t reserved_sectors = 32;
   uint8_t number_of_fats = 2;
   *(uint16_t *)image->boot_sector.byts_per_sec = bytes_per_sector;
@@ -84,7 +99,7 @@ bool setup_FAT_region(image *image) {
       hex_str_to_dec(image->boot_sector.num_fats, num_fats_size);
   size_t FAT_size = total_FAT_size / number_of_fats;
 
-  if (FAT_start + total_FAT_size > image->size) {
+  if (FAT_start + total_FAT_size > (size_t)image->size) {
     fprintf(stderr, "Error: Calculated FAT size exceeds image size\n");
     return false;
   }
@@ -417,9 +432,9 @@ void get_FAT_region(const image *image, int *FAT_region) {
 bool add_dir_entry_to_cluster(image *image, dir_entry d, int cluster) {
   // print tracing message
   if (dev)
-    printf("[-] add_dir_entry_to_cluster(image pointer: 0x%p, dir entry %d, "
+    printf("[-] add_dir_entry_to_cluster(image pointer: 0x%p, dir entry %s, "
            "cluster: %d)\n",
-           image, d, cluster);
+           image, d.name, cluster);
 
   // initial variables
   int i, j;
@@ -629,6 +644,8 @@ dir_entry read_dir_entry(const unsigned char *cluster, int entry) {
 
 // write boot sector into image buffer
 bool write_boot_sector(image *image) {
+  if (image->buffer == NULL)
+    return false;
   return memcpy(image->buffer, &image->boot_sector, sizeof(boot_sector));
 }
 
@@ -649,7 +666,7 @@ bool update_image_file(const image *image) {
             "%s)\n",
             image_file, image->filename);
 
-  bytes = fwrite(image->buffer, sizeof(unsigned char), image->size, image_file);
+  bytes = fwrite(image->buffer, sizeof(char), image->size, image_file);
   fclose(image_file);
   // return if it was updated successfully
   return (bytes == image->size);
@@ -675,8 +692,8 @@ void read_in_image_file(const char *image_filename, image *image) {
   rewind(image_file);              // rewind to file start
 
   // read contents into buffer
-  image->buffer = (unsigned char *)calloc(image->size, sizeof(unsigned char));
-  read = fread(image->buffer, sizeof(unsigned char), image->size, image_file);
+  image->buffer = (char *)calloc(image->size, sizeof(char));
+  read = fread(image->buffer, sizeof(char), image->size, image_file);
 
   // confirm file was read correctly
   if (read != image->size) {
@@ -691,6 +708,14 @@ void read_in_image_file(const char *image_filename, image *image) {
   image->prompt_depth = 0;
   strcpy(image->filename, image_filename);
 }
+
+#define CHECK_FREAD(ptr, size, count, stream)                                  \
+  if (fread(ptr, size, count, stream) != count) {                              \
+    fprintf(stderr, "Error reading " #ptr " from file.\n");                    \
+    fclose(stream);                                                            \
+    memset(&boot_sector, 0, sizeof(boot_sector));                              \
+    return boot_sector;                                                        \
+  }
 
 // read in the boot sector of the image file and save
 // it into the Boot sector struct
@@ -709,48 +734,59 @@ boot_sector read_boot_sector(const char *image_file_name) {
 
   // read each boot sector section into its variable using its
   // predefined size
-  fread(boot_sector.jmp_boot, sizeof(unsigned char), jmp_boot_size, image_file);
-  fread(boot_sector.OEM_name, sizeof(unsigned char), oem_name_size, image_file);
-  fread(boot_sector.byts_per_sec, sizeof(unsigned char), byts_per_sec_size,
-        image_file);
-  fread(boot_sector.sec_per_clus, sizeof(unsigned char), sec_per_clus_size,
-        image_file);
-  fread(boot_sector.rsvd_sec_cnt, sizeof(unsigned char), rsvd_sec_cnt_size,
-        image_file);
-  fread(boot_sector.num_fats, sizeof(unsigned char), num_fats_size, image_file);
-  fread(boot_sector.root_ent_cnt, sizeof(unsigned char), root_ent_cnt_size,
-        image_file);
-  fread(boot_sector.tot_sec_16, sizeof(unsigned char), tot_sec_16_size,
-        image_file);
-  fread(boot_sector.media, sizeof(unsigned char), media_size, image_file);
-  fread(boot_sector.fat_sz_16, sizeof(unsigned char), fat_sz_16_size,
-        image_file);
-  fread(boot_sector.sec_per_trk, sizeof(unsigned char), sec_per_trk_size,
-        image_file);
-  fread(boot_sector.num_heads, sizeof(unsigned char), num_heads_size,
-        image_file);
-  fread(boot_sector.hidd_sec, sizeof(unsigned char), hidd_sec_size, image_file);
-  fread(boot_sector.tot_sec_32, sizeof(unsigned char), tot_sec_32_size,
-        image_file);
-  fread(boot_sector.fat_sz_32, sizeof(unsigned char), fat_sz_32_size,
-        image_file);
-  fread(boot_sector.ext_flags, sizeof(unsigned char), ext_flags_size,
-        image_file);
-  fread(boot_sector.fs_ver, sizeof(unsigned char), fs_ver_size, image_file);
-  fread(boot_sector.root_clust, sizeof(unsigned char), root_clust_size,
-        image_file);
-  fread(boot_sector.fs_info, sizeof(unsigned char), fs_info_size, image_file);
-  fread(boot_sector.bk_boot_sec, sizeof(unsigned char), bk_boot_sec_size,
-        image_file);
-  fread(boot_sector.reserved, sizeof(unsigned char), reserved_size, image_file);
-  fread(boot_sector.drv_num, sizeof(unsigned char), drv_num_size, image_file);
-  fread(boot_sector.reservedl, sizeof(unsigned char), reservedl_size,
-        image_file);
-  fread(boot_sector.boot_sig, sizeof(unsigned char), boot_sig_size, image_file);
-  fread(boot_sector.vol_ID, sizeof(unsigned char), vol_id_size, image_file);
-  fread(boot_sector.vol_lab, sizeof(unsigned char), vol_lab_size, image_file);
-  fread(boot_sector.file_sys_type, sizeof(unsigned char), fil_sys_type_size,
-        image_file);
+  CHECK_FREAD(boot_sector.jmp_boot, sizeof(unsigned char), jmp_boot_size,
+              image_file);
+  CHECK_FREAD(boot_sector.OEM_name, sizeof(unsigned char), oem_name_size,
+              image_file);
+  CHECK_FREAD(boot_sector.byts_per_sec, sizeof(unsigned char),
+              byts_per_sec_size, image_file);
+  CHECK_FREAD(boot_sector.sec_per_clus, sizeof(unsigned char),
+              sec_per_clus_size, image_file);
+  CHECK_FREAD(boot_sector.rsvd_sec_cnt, sizeof(unsigned char),
+              rsvd_sec_cnt_size, image_file);
+  CHECK_FREAD(boot_sector.num_fats, sizeof(unsigned char), num_fats_size,
+              image_file);
+  CHECK_FREAD(boot_sector.root_ent_cnt, sizeof(unsigned char),
+              root_ent_cnt_size, image_file);
+  CHECK_FREAD(boot_sector.tot_sec_16, sizeof(unsigned char), tot_sec_16_size,
+              image_file);
+  CHECK_FREAD(boot_sector.media, sizeof(unsigned char), media_size, image_file);
+  CHECK_FREAD(boot_sector.fat_sz_16, sizeof(unsigned char), fat_sz_16_size,
+              image_file);
+  CHECK_FREAD(boot_sector.sec_per_trk, sizeof(unsigned char), sec_per_trk_size,
+              image_file);
+  CHECK_FREAD(boot_sector.num_heads, sizeof(unsigned char), num_heads_size,
+              image_file);
+  CHECK_FREAD(boot_sector.hidd_sec, sizeof(unsigned char), hidd_sec_size,
+              image_file);
+  CHECK_FREAD(boot_sector.tot_sec_32, sizeof(unsigned char), tot_sec_32_size,
+              image_file);
+  CHECK_FREAD(boot_sector.fat_sz_32, sizeof(unsigned char), fat_sz_32_size,
+              image_file);
+  CHECK_FREAD(boot_sector.ext_flags, sizeof(unsigned char), ext_flags_size,
+              image_file);
+  CHECK_FREAD(boot_sector.fs_ver, sizeof(unsigned char), fs_ver_size,
+              image_file);
+  CHECK_FREAD(boot_sector.root_clust, sizeof(unsigned char), root_clust_size,
+              image_file);
+  CHECK_FREAD(boot_sector.fs_info, sizeof(unsigned char), fs_info_size,
+              image_file);
+  CHECK_FREAD(boot_sector.bk_boot_sec, sizeof(unsigned char), bk_boot_sec_size,
+              image_file);
+  CHECK_FREAD(boot_sector.reserved, sizeof(unsigned char), reserved_size,
+              image_file);
+  CHECK_FREAD(boot_sector.drv_num, sizeof(unsigned char), drv_num_size,
+              image_file);
+  CHECK_FREAD(boot_sector.reservedl, sizeof(unsigned char), reservedl_size,
+              image_file);
+  CHECK_FREAD(boot_sector.boot_sig, sizeof(unsigned char), boot_sig_size,
+              image_file);
+  CHECK_FREAD(boot_sector.vol_ID, sizeof(unsigned char), vol_id_size,
+              image_file);
+  CHECK_FREAD(boot_sector.vol_lab, sizeof(unsigned char), vol_lab_size,
+              image_file);
+  CHECK_FREAD(boot_sector.file_sys_type, sizeof(unsigned char),
+              fil_sys_type_size, image_file);
 
   return boot_sector;
 }
@@ -833,5 +869,5 @@ int power(int base, int raise) {
 int compare_dirs(const void *p1, const void *p2) {
   dir_entry *d1 = (dir_entry *)p1;
   dir_entry *d2 = (dir_entry *)p2;
-  return strcmp(d1->name, d2->name);
+  return strcmp((char *)d1->name, (char *)d2->name);
 }

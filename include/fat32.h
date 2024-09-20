@@ -2,14 +2,7 @@
 #define FAT32_H
 
 // includes
-#include <assert.h>
-#include <ctype.h>
-#include <math.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
 #include <unistd.h>
 
 // logging
@@ -128,8 +121,8 @@ typedef struct image {
   open_file open_files[150];
   int open_files_cnt;
   boot_sector boot_sector;
-  unsigned char *buffer;
-  unsigned long size;
+  char *buffer;
+  long size;
   int current_cluster;
   char filename[150];
   char cwd[150][150];
@@ -180,7 +173,7 @@ boot_sector read_boot_sector(const char *image_file_name);
 // Basic functions
 void exit_cmd(image *image);
 void info_cmd(const image *image);
-bool format_cmd(char args[], image *image, char error_msg[]);
+bool format_cmd(char args[], image *image);
 bool ls_cmd(char args[], const image *image, char error_msg[]);
 bool cd_cmd(char args[], image *image, char error_msg[]);
 bool touch_cmd(char args[], image *image, char error_msg[]);

@@ -1,6 +1,8 @@
-#include "../include/fat32.h"
+#include "fat32.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
 // exit from the program
 void exit_cmd(image *image) {
   free(image->buffer);
@@ -83,13 +85,13 @@ void info_cmd(const image *image) {
  * print the name field for the directories within the contents of DIRNAME
  * including the “.” and “..” directories. For simplicity, you may print each of
  * the directory entries on separate lines
-*/
+ */
 bool ls_cmd(char args[], const image *image, char error_msg[]) {
 
   // initial variables
   dir_entry entries[150];  // abirtrary amount of dir entries
   int dir_entry_count = 0; // current dir entry count
-  int i, j;
+  int i;
 
   // if no arguments, then use cwd
   if (strcmp(args, "") == 0) {
@@ -179,7 +181,7 @@ bool cd_cmd(char args[], image *image, char error_msg[]) {
   // initial variables
   dir_entry entries[150];  // abirtrary amount of dir entries
   int dir_entry_count = 0; // current dir entry count
-  int i, j;
+  int i;
 
   // check arguments
   if (strcmp(args, "") == 0) {
@@ -256,7 +258,7 @@ bool touch_cmd(char args[], image *image, char error_msg[]) {
   int clusters[1000];
   dir_entry entries[150];  // abirtrary amount of dir entries
   int dir_entry_count = 0; // current dir entry count
-  int i, j;
+  int i;
 
   // check to make sure there is a filename given (strcmp(args,"") != 0)
   if (strcmp(args, "") == 0) {
@@ -341,7 +343,7 @@ bool mkdir_cmd(char args[], image *image, char error_msg[]) {
   int clusters[1000];
   dir_entry entries[150];  // abitrary amount of dir entries
   int dir_entry_count = 0; // current dir entry count
-  int i, j;
+  int i;
 
   // check to make sure there is a directory name given (strcmp(args,"") != 0)
   if (strcmp(args, "") == 0) {
@@ -540,7 +542,7 @@ bool open_cmd(char args[], image *image, char error_msg[]) {
  * struct member field.
  *  TODO: add options so formatting is not so hardcoded
  */
-bool format_cmd(char args[], image *image, char *error_msg) {
+bool format_cmd(char args[], image *image) {
   if (args != NULL) {
     // if user provided some file as input
     image = calloc(1, sizeof(*image)); // image struct for image file
@@ -548,13 +550,12 @@ bool format_cmd(char args[], image *image, char *error_msg) {
       fprintf(stderr, "[!] Failed to allocate memory for image struct!\n");
       exit(-1);
     }
+
     // copy provided filename, open file, calculate size, write
     remove_trailing_space(args);
     strcpy(image->filename, args);
     // initial variables
     FILE *image_file;
-    int bytes;
-
     // open file
     image_file = fopen(image->filename, "rb");
     if (!image_file) { // check if file open correctly
@@ -595,7 +596,6 @@ bool format_cmd(char args[], image *image, char *error_msg) {
 bool rm_cmd(char args[], image *image, char error_msg[]) {
   dir_entry entries[150];
   int clusters[150];
-  int dir_clusters[5];
   int dir_entry_count = 0, index = 0;
   int i;
 
@@ -736,7 +736,6 @@ bool rmdir_cmd(char args[], image *image, char error_msg[]) {
 
   dir_entry entries[150];
   int clusters[150];
-  int dir_clusters[5];
   int dir_entry_count = 0, index = 0;
 
   // check to make sure there is a directory name given

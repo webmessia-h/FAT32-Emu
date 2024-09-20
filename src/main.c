@@ -1,7 +1,10 @@
 #include "fat32.h"
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
 int main(int argc, char **argv) {
 
   char line[10000];                         // for reading command line input
@@ -21,14 +24,14 @@ int main(int argc, char **argv) {
     fprintf(stdout, "[-] initializing image...\n");
     image_filename = "fat32.img";
     image->size = (unsigned long)(20 * 1024 * 1024); // 20MB
-    image->buffer = (unsigned char *)calloc(image->size, sizeof(unsigned char));
+    image->buffer = (char *)calloc(image->size, sizeof(char));
     if (image->buffer == NULL) {
       fprintf(stderr, "[!] failed to allocate image->buffer!\n");
       exit(-2);
     }
     strcpy(image->filename, image_filename);
     // create image
-    format_cmd(NULL, image, NULL);
+    format_cmd(NULL, image);
   } else {
     // get image file name
     image_filename = (char *)calloc(strlen(argv[1]) + 1, sizeof(char));
@@ -42,10 +45,12 @@ int main(int argc, char **argv) {
   if (image->size == 0 || *(uint32_t *)image->boot_sector.fat_sz_32 == 0) {
     printf("[!] Unknown disk format, use 'format <filename>' to get valid FAT32"
            "image.\n    Or restart application with valid/without image file "
-           "argument\n");
+           "argument.\n");
     print_prompt(image);
-    fgets(line, 200, stdin);
-    parse_input(line, image);
+    if (fgets(line, 256, stdin) != NULL)
+      parse_input(line, image);
+    else
+      printf("[!] Error occured: %s", strerror(errno));
   }
   // read image file in image struct
   // fprintf(stdout, "[-] reading image file...\n");
@@ -105,7 +110,7 @@ void parse_input(char *line, image *image) {
   // get arguments
   char args[10000];
   int start = strlen(command) + 1;
-  for (i = start; i < strlen(line); i++) {
+  for (i = start; (unsigned)i < strlen(line); i++) {
     args[i - start] = line[i];
   }
   args[i - start] = '\0';
@@ -123,7 +128,7 @@ void parse_input(char *line, image *image) {
     info_cmd(image);
 
   else if (strcmp(command, "format") == 0)
-    check = format_cmd(args, image, error_msg);
+    check = format_cmd(args, image);
 
   else if (strcmp(command, "ls") == 0)
     check = ls_cmd(args, image, error_msg);

@@ -1,22 +1,41 @@
-CC = gcc
-CFLAGS = -I./include -g -Wall -Wextra
+# Directories
+SRC_DIR := src
+OBJ_DIR := obj
 
-SOURCES = $(wildcard src/*.c)
-OBJECTS = $(patsubst src/%.c,build/%.o,$(SOURCES))
-TARGET = fat32_emulator
+# Source files
+SRCS := $(wildcard $(SRC_DIR)/*.c)
+# Object files
+OBJS := $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
-.PHONY: all clean
+# Flags
+CC := gcc
+CFLAGS := -I./include -g -O2 -march=native -mtune=native
+LDFLAGS := 
 
+# Executable
+TARGET := fat32_emulator
+
+# Default target
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJECTS)
+# Create obj directory if it doesn't exist
+$(OBJ_DIR):	
+	mkdir -p $(OBJ_DIR)
 
-build/%.o: src/%.c | build
-	$(CC) $(CFLAGS) -c $< -o $@
+# Compilation
+$(OBJ_DIR)/%.o:	$(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CC) $(CFLAGS) -MMD -c $< -o $@
 
-build:
-	mkdir -p build
+# Linking 
+$(TARGET):	$(OBJS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
+# Include dependency files
+-include $(OBJS:.o=.d)
+
+# Clean up
 clean:
-	rm -rf build $(TARGET)
+	rm -rf $(OBJ_DIR) $(TARGET) $(OBJS:.o=.d)
+
+# Phony targets
+.PHONY: all clean
